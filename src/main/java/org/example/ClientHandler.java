@@ -1,5 +1,8 @@
 package org.example;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,6 +13,8 @@ public class ClientHandler extends Thread {
     private final Socket socket;
     private String nickname;
     private PrintWriter out;
+    private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
+
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -44,7 +49,7 @@ public class ClientHandler extends Thread {
                 handleCommand(command, content);
             }
         } catch (IOException e) {
-            Loggers.getLoggerErrors().error("Error handling client {}: ", nickname, e);
+            logger.warn("Error handling client {}: ", nickname, e);
         } finally {
             Server.removeClient(nickname);
         }

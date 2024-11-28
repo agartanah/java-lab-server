@@ -1,5 +1,8 @@
 package org.example;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,17 +18,18 @@ public class Server {
     private static final Map<String, ClientHandler> clients = new ConcurrentHashMap<>();
     private static String host;
     private static int port;
+    private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
     public static void start() {
         loadConfig();
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            Loggers.getLoggerUser().info("Server started at {}:{}", host, port);
+            logger.info("Server started at {}:{}", host, port);
             while (true) {
                 Socket socket = serverSocket.accept();
                 new ClientHandler(socket).start();
             }
         } catch (IOException e) {
-            Loggers.getLoggerErrors().error("Server error: ", e);
+            logger.error("Server error: ", e);
         }
     }
 
@@ -39,29 +43,29 @@ public class Server {
             host = prop.getProperty("host");
             port = Integer.parseInt(prop.getProperty("port"));
         } catch (IOException e) {
-            Loggers.getLoggerErrors().error("Failed to load server properties: ", e);
+            logger.error("Failed to load server properties: ", e);
         }
     }
 
     static synchronized void broadcast(String message, String sender) {
-        Loggers.getLoggerUser().info("Broadcast message from {}: {}", sender, message);
+        logger.info("Broadcast message from {}: {}", sender, message);
         clients.forEach((nickname, client) -> client.sendMessage("Broadcast from " + sender + ": " + message));
     }
 
     static synchronized void privateMessage(String recipient, String message, String sender) {
         ClientHandler client = clients.get(recipient);
         if (client != null) {
-            Loggers.getLoggerUser().info("Private message from {} to {}: {}", sender, recipient, message);
+            logger.info("Private message from {} to {}: {}", sender, recipient, message);
             client.sendMessage("Private from " + sender + ": " + message);
         } else {
-            Loggers.getLoggerErrors().warn("Attempted to send message to nonexistent user: {}", recipient);
+            logger.error("Attempted to send message to nonexistent user: {}", recipient);
             clients.get(sender).sendMessage("Attempted to send message to nonexistent user: " + recipient);
         }
     }
 
     static synchronized void addClient(String nickname, ClientHandler handler) {
         if (clients.containsKey(nickname)) {
-            Loggers.getLoggerErrors().warn("This nickname exists: {}", nickname);
+            logger.error("This nickname exists: {}", nickname);
             throw new RuntimeException("This nickname exists");
         }
 
